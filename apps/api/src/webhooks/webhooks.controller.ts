@@ -10,4 +10,5 @@ export class WebhooksController{
   constructor(private readonly webhooks:WebhooksService){}
   @Post()create(@Req()req:AuthenticatedRequest,@Body()dto:CreateWebhookDto){return this.webhooks.create(req.user.sub,dto.url)}
   @Get()list(@Req()req:AuthenticatedRequest){return this.webhooks.list(req.user.sub)}
+  @Get('deliveries')deliveries(@Req()req:AuthenticatedRequest){return this.webhooks.deliveries(req.user.sub)}
 }
