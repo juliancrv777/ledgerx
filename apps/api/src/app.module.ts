@@ -8,7 +8,8 @@ import {WebhooksModule} from './webhooks/webhooks.module';
 import {OutboxModule} from './outbox/outbox.module';
 import {ObservabilityModule} from './observability/observability.module';
 import {RequestObservabilityMiddleware} from './observability/request-observability.middleware';
+import {rateLimitMiddleware} from './security/rate-limit.middleware';
 @Module({imports:[PrismaModule,AuthModule,WalletsModule,TransfersModule,WebhooksModule,OutboxModule,ObservabilityModule],controllers:[HealthController]})
 export class AppModule implements NestModule{
-  configure(consumer:MiddlewareConsumer){consumer.apply(RequestObservabilityMiddleware).forRoutes('*')}
+  configure(consumer:MiddlewareConsumer){consumer.apply(RequestObservabilityMiddleware,rateLimitMiddleware).forRoutes('*')}
 }
