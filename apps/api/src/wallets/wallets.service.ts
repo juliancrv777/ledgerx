@@ -1,6 +1,7 @@
-import {ConflictException,ForbiddenException,Injectable,NotFoundException} from '@nestjs/common';
+import {BadRequestException,ConflictException,ForbiddenException,Injectable,NotFoundException} from '@nestjs/common';
 import {Prisma} from '@prisma/client';
 import {PrismaService} from '../prisma/prisma.service';
+import {assertBalanced} from '../transfers/ledger.rules';
 
 @Injectable()
 export class WalletsService{
@@ -30,14 +31,22 @@ export class WalletsService{
   }
 
   async fund(userId:string,walletId:string,amountMinor:number,idempotencyKey:string){
-    if(!idempotencyKey.trim())throw new ConflictException('Idempotency-Key header is required');
+    const key=idempotencyKey.trim();
+    if(!key)throw new BadRequestException('Idempotency-Key header is required');
+
     const wallet=await this.db.wallet.findUnique({where:{id:walletId}});
     if(!wallet)throw new NotFoundException('Wallet not found');
     if(wallet.userId!==userId)throw new ForbiddenException('Wallet ownership required');
 
-    const referenceKey=`fund:${userId}:${idempotencyKey.trim()}`;
+    const referenceKey=`fund:${userId}:${key}`;
+    const fingerprint=`${walletId}:${amountMinor}`;
     const existing=await this.db.ledgerTransaction.findUnique({where:{referenceKey}});
-    if(existing)return{transactionId:existing.id,replayed:true};
+    if(existing){
+      if(existing.requestFingerprint!==fingerprint){
+        throw new ConflictException('Idempotency key was already used with a different request');
+      }
+      return{transactionId:existing.id,replayed:true};
+    }
 
     try{
       const transaction=await this.db.$transaction(async tx=>{
@@ -48,14 +57,18 @@ export class WalletsService{
         const clearingAccount=accounts.find(x=>x.name==='funding-clearing');
         if(!balanceAccount||!clearingAccount)throw new Error('Wallet ledger accounts are missing');
 
+        const entries=[
+          {accountId:balanceAccount.id,amountMinor:BigInt(amountMinor)},
+          {accountId:clearingAccount.id,amountMinor:-BigInt(amountMinor)},
+        ];
+        assertBalanced(entries);
+
         return tx.ledgerTransaction.create({
           data:{
             referenceKey,
+            requestFingerprint:fingerprint,
             description:'Simulated wallet funding',
-            entries:{create:[
-              {accountId:balanceAccount.id,amountMinor:BigInt(amountMinor)},
-              {accountId:clearingAccount.id,amountMinor:-BigInt(amountMinor)},
-            ]},
+            entries:{create:entries},
           },
         });
       },{isolationLevel:Prisma.TransactionIsolationLevel.Serializable});
@@ -63,7 +76,12 @@ export class WalletsService{
     }catch(error){
       if(error instanceof Prisma.PrismaClientKnownRequestError&&error.code==='P2002'){
         const replay=await this.db.ledgerTransaction.findUnique({where:{referenceKey}});
-        if(replay)return{transactionId:replay.id,replayed:true};
+        if(replay){
+          if(replay.requestFingerprint!==fingerprint){
+            throw new ConflictException('Idempotency key was already used with a different request');
+          }
+          return{transactionId:replay.id,replayed:true};
+        }
       }
       throw error;
     }

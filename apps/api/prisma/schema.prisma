@@ -58,12 +58,13 @@ model LedgerAccount {
 }
 
 model LedgerTransaction {
-  id           String        @id @default(cuid())
-  referenceKey String        @unique
-  description  String
-  createdAt    DateTime      @default(now())
-  entries      LedgerEntry[]
-  transfer     Transfer?
+  id                 String        @id @default(cuid())
+  referenceKey       String        @unique
+  requestFingerprint String?
+  description        String
+  createdAt          DateTime      @default(now())
+  entries            LedgerEntry[]
+  transfer           Transfer?
 }
 
 model LedgerEntry {

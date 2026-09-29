@@ -7,7 +7,9 @@
     "target": "ES2022",
     "outDir": "./dist",
     "strict": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.ts","test/**/*.ts"]
 }
