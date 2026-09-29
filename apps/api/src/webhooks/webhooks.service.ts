@@ -1,13 +1,15 @@
 import {Injectable,NotFoundException} from '@nestjs/common';
 import {randomBytes} from 'node:crypto';
 import {PrismaService} from '../prisma/prisma.service';
+import {assertSafeWebhookUrl} from './webhook-url.security';
 
 @Injectable()
 export class WebhooksService{
   constructor(private readonly db:PrismaService){}
   async create(userId:string,url:string){
+    const safeUrl=await assertSafeWebhookUrl(url);
     const secret=randomBytes(32).toString('hex');
-    const endpoint=await this.db.webhookEndpoint.create({data:{userId,url,secret}});
+    const endpoint=await this.db.webhookEndpoint.create({data:{userId,url:safeUrl,secret}});
     return{id:endpoint.id,url:endpoint.url,secret,active:endpoint.active,createdAt:endpoint.createdAt};
   }
   async list(userId:string){
