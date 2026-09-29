@@ -1,11 +1,17 @@
 # LedgerX
 
+![CI](https://github.com/juliancrv777/ledgerx/actions/workflows/ci.yml/badge.svg)
+
 Production-minded simulated payment platform focused on financial correctness, concurrency, security and event-driven delivery.
 
 **Live demo:** https://ledgerx-seven.vercel.app  
 **API:** https://ledgerx-0t5d.onrender.com/api/health
 
 > LedgerX uses simulated money only. It is an engineering portfolio project, not a real payment processor.
+
+## Tech stack
+
+TypeScript, Next.js, React, NestJS, PostgreSQL, Prisma, Redis, BullMQ, Jest, Docker, GitHub Actions, Vercel and Render.
 
 ## What it demonstrates
 
@@ -53,7 +59,7 @@ The API and worker run as supervised processes in the same Render service for th
 
 Every ledger transaction is asserted to balance to zero. Transfer writes run at PostgreSQL `SERIALIZABLE` isolation and retry serialization conflicts. Idempotency keys are scoped to the initiating user and bound to a request fingerprint, preventing the same key from being reused with a different payload.
 
-The E2E suite validates funding replay, transfer replay, payload mismatch rejection, insufficient/concurrent spending protection and the double-entry invariant.
+The E2E suite validates funding replay, transfer replay, payload mismatch rejection, insufficient/concurrent spending protection and the double-entry invariant. Its stress scenario fires 100 concurrent transfer attempts against the same funded wallet and verifies that exactly 50 post successfully, 50 are rejected for insufficient funds, and the final balance is zero.
 
 ## Authentication
 
