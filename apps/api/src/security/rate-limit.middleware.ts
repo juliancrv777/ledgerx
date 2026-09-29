@@ -17,7 +17,7 @@ redis?.on('error',()=>{});
 export function rateLimitPolicy(req:Pick<Request,'method'|'path'>):Policy{
   const method=req.method.toUpperCase();
   const path=req.path;
-  if(method==='POST'&&(path==='/api/auth/login'||path==='/api/auth/register')){
+  if(method==='POST'&&(path==='/api/auth/login'||path==='/api/auth/register'||path==='/api/auth/refresh')){
     return{scope:'auth',limit:10,windowSeconds:60};
   }
   if(['POST','PUT','PATCH','DELETE'].includes(method)&&(
