@@ -32,7 +32,7 @@ async function bootstrap(){
     methods:['GET','HEAD','POST','PUT','PATCH','DELETE','OPTIONS'],
     allowedHeaders:['Content-Type','Authorization','Idempotency-Key','X-Request-Id'],
     exposedHeaders:['X-Request-Id'],
-    credentials:false,
+    credentials:true,
     optionsSuccessStatus:204
   });
 
