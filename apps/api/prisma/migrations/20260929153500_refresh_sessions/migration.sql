@@ -4,3 +4,4 @@ CREATE TABLE "RefreshSession" (
 );
 CREATE UNIQUE INDEX "RefreshSession_tokenHash_key" ON "RefreshSession"("tokenHash");
 CREATE INDEX "RefreshSession_userId_expiresAt_idx" ON "RefreshSession"("userId","expiresAt");
+ALTER TABLE "RefreshSession" ADD CONSTRAINT "RefreshSession_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
