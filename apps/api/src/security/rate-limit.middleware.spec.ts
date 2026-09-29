@@ -4,6 +4,7 @@ describe('rate limit policy',()=>{
   it('uses strict auth limits',()=>{
     expect(rateLimitPolicy({method:'POST',path:'/api/auth/login'} as any)).toEqual({scope:'auth',limit:10,windowSeconds:60});
     expect(rateLimitPolicy({method:'POST',path:'/api/auth/register'} as any)).toEqual({scope:'auth',limit:10,windowSeconds:60});
+    expect(rateLimitPolicy({method:'POST',path:'/api/auth/refresh'} as any)).toEqual({scope:'auth',limit:10,windowSeconds:60});
   });
 
   it('uses mutation limits for financial and webhook writes',()=>{
