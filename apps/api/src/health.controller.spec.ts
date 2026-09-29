@@ -2,6 +2,7 @@ import {HealthController} from './health.controller';
 
 describe('HealthController',()=>{
   it('reports the API as healthy',()=>{
-    expect(new HealthController().health()).toEqual({status:'ok',service:'ledgerx-api'});
+    const db={$queryRaw:jest.fn()} as never;
+    expect(new HealthController(db).health()).toEqual({status:'ok',service:'ledgerx-api'});
   });
 });
