@@ -7,7 +7,7 @@ import {JwtAuthGuard} from './jwt-auth.guard';
 import type {AuthenticatedRequest} from './auth.types';
 
 const COOKIE='ledgerx_refresh';
-const cookieOptions={httpOnly:true,secure:process.env.NODE_ENV==='production',sameSite:'none' as const,path:'/api/auth',maxAge:7*24*60*60*1000};
+const cookieOptions={httpOnly:true,secure:process.env.NODE_ENV==='production',sameSite:'lax' as const,path:'/api/auth',maxAge:7*24*60*60*1000};
 function readCookie(req:Request,name:string){
   const raw=req.headers.cookie??'';
   for(const item of raw.split(';')){
@@ -42,7 +42,7 @@ export class AuthController{
   @Post('logout')
   async logout(@Req()req:Request,@Res()res:Response){
     await this.auth.logout(readCookie(req,COOKIE));
-    res.clearCookie(COOKIE,{httpOnly:true,secure:process.env.NODE_ENV==='production',sameSite:'none',path:'/api/auth'});
+    res.clearCookie(COOKIE,{httpOnly:true,secure:process.env.NODE_ENV==='production',sameSite:'lax',path:'/api/auth'});
     return res.json({ok:true});
   }
 
