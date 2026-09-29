@@ -6,7 +6,21 @@ import {assertBalanced,assertPositiveAmount} from './ledger.rules';
 
 @Injectable()
 export class TransfersService{
+  private readonly walletLocks=new Map<string,Promise<void>>();
   constructor(private readonly db:PrismaService){}
+
+  private async withWalletLock<T>(walletId:string,work:()=>Promise<T>):Promise<T>{
+    const previous=this.walletLocks.get(walletId)??Promise.resolve();
+    let release!:()=>void;
+    const current=new Promise<void>(resolve=>{release=resolve});
+    this.walletLocks.set(walletId,current);
+    await previous;
+    try{return await work();}
+    finally{
+      release();
+      if(this.walletLocks.get(walletId)===current)this.walletLocks.delete(walletId);
+    }
+  }
 
   private serialize(transfer:{id:string;fromWalletId:string;toWalletId:string;amountMinor:bigint;currency:string;status:TransferStatus;createdAt:Date},replayed:boolean){
     return{...transfer,amountMinor:transfer.amountMinor.toString(),replayed};
@@ -44,7 +58,7 @@ export class TransfersService{
       return this.serialize(previous,true);
     }
     try{
-      const created=await this.runSerializable(async tx=>{
+      const created=await this.withWalletLock(dto.fromWalletId,()=>this.runSerializable(async tx=>{
         const replay=await tx.transfer.findUnique({where:{requestedById_idempotencyKey:{requestedById:userId,idempotencyKey:key}}});
         if(replay){
           if(!this.sameRequest(replay,dto))throw new ConflictException('Idempotency key was already used with a different request');
@@ -68,7 +82,7 @@ export class TransfersService{
           payload:{transferId:transfer.id,userId,fromWalletId:fromWallet.id,toWalletId:toWallet.id,amountMinor:amount.toString(),currency:fromWallet.currency,status:'POSTED'},
         }});
         return transfer;
-      });
+      }));
       return this.serialize(created,false);
     }catch(error){
       if(error instanceof Prisma.PrismaClientKnownRequestError&&error.code==='P2002'){
