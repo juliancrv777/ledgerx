@@ -10,6 +10,7 @@ describe('LedgerX financial flow (e2e)',()=>{
   let db:PrismaService;
 
   beforeAll(async()=>{
+    process.env.RATE_LIMIT_DISABLED='true';
     const moduleRef=await Test.createTestingModule({imports:[AppModule]}).compile();
     app=moduleRef.createNestApplication();
     app.setGlobalPrefix('api');
@@ -24,7 +25,10 @@ describe('LedgerX financial flow (e2e)',()=>{
     await db.user.deleteMany();
   });
 
-  afterAll(async()=>{await app.close()});
+  afterAll(async()=>{
+    delete process.env.RATE_LIMIT_DISABLED;
+    await app.close();
+  });
 
   async function register(label:string){
     const response=await request(app.getHttpServer())
