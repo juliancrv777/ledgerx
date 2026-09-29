@@ -2,6 +2,7 @@ import {PrismaClient} from '@prisma/client';
 import {Queue,Worker} from 'bullmq';
 import IORedis from 'ioredis';
 import {signWebhook} from './webhook-signature.js';
+import {assertSafeWebhookTarget} from './webhook-target.security.js';
 
 const redisUrl=process.env.REDIS_URL??'redis://localhost:6379';
 const queuePrefix=process.env.BULLMQ_PREFIX??'ledgerx';
@@ -36,7 +37,8 @@ const worker=new Worker('webhooks',async job=>{
     const signature=signWebhook(endpoint.secret,timestamp,body);
 
     try{
-      const response=await fetch(endpoint.url,{
+      const safeUrl=await assertSafeWebhookTarget(endpoint.url);
+      const response=await fetch(safeUrl,{
         method:'POST',
         headers:{
           'content-type':'application/json',
@@ -45,6 +47,7 @@ const worker=new Worker('webhooks',async job=>{
         },
         body,
         signal:AbortSignal.timeout(5000),
+        redirect:'error',
       });
 
       await db.webhookDelivery.create({
