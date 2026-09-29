@@ -58,6 +58,7 @@ async function increment(key:string,windowSeconds:number){
 }
 
 export async function rateLimitMiddleware(req:Request,res:Response,next:NextFunction){
+  if(process.env.RATE_LIMIT_DISABLED==='true')return next();
   if(req.method==='OPTIONS')return next();
   const policy=rateLimitPolicy(req);
   const ip=req.ip||req.socket.remoteAddress||'unknown';
