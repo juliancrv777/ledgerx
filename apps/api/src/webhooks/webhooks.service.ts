@@ -1,4 +1,4 @@
-import {Injectable} from '@nestjs/common';
+import {Injectable,NotFoundException} from '@nestjs/common';
 import {randomBytes} from 'node:crypto';
 import {PrismaService} from '../prisma/prisma.service';
 
@@ -12,6 +12,11 @@ export class WebhooksService{
   }
   async list(userId:string){
     return this.db.webhookEndpoint.findMany({where:{userId},select:{id:true,url:true,active:true,createdAt:true},orderBy:{createdAt:'desc'}});
+  }
+  async setActive(userId:string,id:string,active:boolean){
+    const result=await this.db.webhookEndpoint.updateMany({where:{id,userId},data:{active}});
+    if(result.count===0)throw new NotFoundException('Webhook endpoint not found');
+    return this.db.webhookEndpoint.findUniqueOrThrow({where:{id},select:{id:true,url:true,active:true,createdAt:true}});
   }
   async deliveries(userId:string){
     return this.db.webhookDelivery.findMany({
