@@ -1,6 +1,6 @@
 import type {NextConfig} from 'next';
 
-const apiOrigin=(process.env.LEDGERX_API_ORIGIN??'http://localhost:4000').replace(/\/$/,'');
+const apiOrigin=(process.env.LEDGERX_API_ORIGIN??process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/?$/,'')??'http://localhost:4000').replace(/\/$/,'');
 
 const nextConfig:NextConfig={
   async rewrites(){
