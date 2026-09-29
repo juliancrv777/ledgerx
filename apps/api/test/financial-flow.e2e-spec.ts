@@ -125,7 +125,7 @@ describe('LedgerX financial flow (e2e)',()=>{
     const webhook=await request(app.getHttpServer())
       .post('/api/webhooks')
       .set('Authorization',`Bearer ${a.token}`)
-      .send({url:'https://example.com/ledgerx-webhook'})
+      .send({url:'https://1.1.1.1/ledgerx-webhook'})
       .expect(201);
     expect(webhook.body.active).toBe(true);
     expect(typeof webhook.body.secret).toBe('string');
