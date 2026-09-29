@@ -32,6 +32,13 @@ describe('LedgerX financial flow (e2e)',()=>{
       .send({name:label,email:`${label.toLowerCase()}@example.com`,password:'E2E-password-123!'})
       .expect(201);
     const token=response.body.accessToken as string;
+    const refreshCookie=(response.headers['set-cookie'] as unknown as string[]|undefined)?.find(value=>value.startsWith('ledgerx_refresh='));
+    expect(refreshCookie).toContain('HttpOnly');
+    const refreshed=await request(app.getHttpServer()).post('/api/auth/refresh').set('Cookie',refreshCookie??'').expect(201);
+    expect(typeof refreshed.body.accessToken).toBe('string');
+    const rotatedCookie=(refreshed.headers['set-cookie'] as unknown as string[]|undefined)?.find(value=>value.startsWith('ledgerx_refresh='));
+    expect(rotatedCookie).toBeDefined();
+    await request(app.getHttpServer()).post('/api/auth/refresh').set('Cookie',refreshCookie??'').expect(401);
     const wallets=await request(app.getHttpServer())
       .get('/api/wallets')
       .set('Authorization',`Bearer ${token}`)
