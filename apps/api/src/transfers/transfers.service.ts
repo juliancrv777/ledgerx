@@ -15,7 +15,7 @@ export class TransfersService{
     return existing.fromWalletId===dto.fromWalletId&&existing.toWalletId===dto.toWalletId&&existing.amountMinor===BigInt(dto.amountMinor);
   }
   private async runSerializable<T>(work:(tx:Prisma.TransactionClient)=>Promise<T>):Promise<T>{
-    const maxAttempts=5;
+    const maxAttempts=20;
     for(let attempt=0;attempt<maxAttempts;attempt++){
       try{
         return await this.db.$transaction(work,{isolationLevel:Prisma.TransactionIsolationLevel.Serializable});
@@ -25,7 +25,9 @@ export class TransfersService{
         if(attempt===maxAttempts-1){
           throw new ConflictException('Concurrent transfer conflict; retry with the same idempotency key');
         }
-        await new Promise(resolve=>setTimeout(resolve,25*(attempt+1)));
+        const exponential=Math.min(10*2**attempt,250);
+        const jitter=Math.floor(Math.random()*25);
+        await new Promise(resolve=>setTimeout(resolve,exponential+jitter));
       }
     }
     throw new ConflictException('Concurrent transfer conflict');
