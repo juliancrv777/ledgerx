@@ -1,53 +1,145 @@
-generator client { provider = "prisma-client-js" }
-datasource db { provider = "postgresql" url = env("DATABASE_URL") }
-enum AccountType { ASSET LIABILITY EQUITY REVENUE EXPENSE }
-enum TransferStatus { POSTED REVERSED }
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  REVENUE
+  EXPENSE
+}
+
+enum TransferStatus {
+  POSTED
+  REVERSED
+}
+
 model User {
-  id String @id @default(cuid()) email String @unique name String passwordHash String createdAt DateTime @default(now()) updatedAt DateTime @updatedAt
-  wallets Wallet[] transfersInitiated Transfer[] @relation("TransfersInitiated") webhookEndpoints WebhookEndpoint[]
+  id                 String            @id @default(cuid())
+  email              String            @unique
+  name               String
+  passwordHash       String
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  wallets            Wallet[]
+  transfersInitiated Transfer[]        @relation("TransfersInitiated")
+  webhookEndpoints   WebhookEndpoint[]
 }
+
 model Wallet {
-  id String @id @default(cuid()) userId String currency String createdAt DateTime @default(now())
-  user User @relation(fields:[userId],references:[id],onDelete:Cascade) accounts LedgerAccount[]
-  sentTransfers Transfer[] @relation("SentTransfers") receivedTransfers Transfer[] @relation("ReceivedTransfers")
-  @@unique([userId,currency]) @@index([userId])
+  id                String          @id @default(cuid())
+  userId            String
+  currency          String
+  createdAt         DateTime        @default(now())
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accounts          LedgerAccount[]
+  sentTransfers     Transfer[]      @relation("SentTransfers")
+  receivedTransfers Transfer[]      @relation("ReceivedTransfers")
+
+  @@unique([userId, currency])
+  @@index([userId])
 }
+
 model LedgerAccount {
-  id String @id @default(cuid()) walletId String type AccountType name String
-  wallet Wallet @relation(fields:[walletId],references:[id],onDelete:Cascade) entries LedgerEntry[]
-  @@unique([walletId,name]) @@index([walletId])
+  id       String        @id @default(cuid())
+  walletId String
+  type     AccountType
+  name     String
+  wallet   Wallet        @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  entries  LedgerEntry[]
+
+  @@unique([walletId, name])
+  @@index([walletId])
 }
+
 model LedgerTransaction {
-  id String @id @default(cuid()) referenceKey String @unique requestFingerprint String? description String createdAt DateTime @default(now())
-  entries LedgerEntry[] transfer Transfer?
+  id                 String        @id @default(cuid())
+  referenceKey       String        @unique
+  requestFingerprint String?
+  description        String
+  createdAt          DateTime      @default(now())
+  entries            LedgerEntry[]
+  transfer           Transfer?
 }
+
 model LedgerEntry {
-  id String @id @default(cuid()) transactionId String accountId String amountMinor BigInt createdAt DateTime @default(now())
-  transaction LedgerTransaction @relation(fields:[transactionId],references:[id],onDelete:Cascade)
-  account LedgerAccount @relation(fields:[accountId],references:[id],onDelete:Restrict)
-  @@index([transactionId]) @@index([accountId])
+  id            String            @id @default(cuid())
+  transactionId String
+  accountId     String
+  amountMinor   BigInt
+  createdAt     DateTime          @default(now())
+  transaction   LedgerTransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  account       LedgerAccount     @relation(fields: [accountId], references: [id], onDelete: Restrict)
+
+  @@index([transactionId])
+  @@index([accountId])
 }
+
 model Transfer {
-  id String @id @default(cuid()) requestedById String idempotencyKey String fromWalletId String toWalletId String amountMinor BigInt currency String status TransferStatus @default(POSTED) ledgerTransactionId String @unique createdAt DateTime @default(now())
-  requestedBy User @relation("TransfersInitiated",fields:[requestedById],references:[id],onDelete:Restrict)
-  fromWallet Wallet @relation("SentTransfers",fields:[fromWalletId],references:[id],onDelete:Restrict)
-  toWallet Wallet @relation("ReceivedTransfers",fields:[toWalletId],references:[id],onDelete:Restrict)
-  ledgerTransaction LedgerTransaction @relation(fields:[ledgerTransactionId],references:[id],onDelete:Restrict)
-  @@unique([requestedById,idempotencyKey]) @@index([fromWalletId,createdAt]) @@index([toWalletId,createdAt])
+  id                  String            @id @default(cuid())
+  requestedById       String
+  idempotencyKey      String
+  fromWalletId        String
+  toWalletId          String
+  amountMinor         BigInt
+  currency            String
+  status              TransferStatus    @default(POSTED)
+  ledgerTransactionId String            @unique
+  createdAt           DateTime          @default(now())
+  requestedBy         User              @relation("TransfersInitiated", fields: [requestedById], references: [id], onDelete: Restrict)
+  fromWallet          Wallet            @relation("SentTransfers", fields: [fromWalletId], references: [id], onDelete: Restrict)
+  toWallet            Wallet            @relation("ReceivedTransfers", fields: [toWalletId], references: [id], onDelete: Restrict)
+  ledgerTransaction   LedgerTransaction @relation(fields: [ledgerTransactionId], references: [id], onDelete: Restrict)
+
+  @@unique([requestedById, idempotencyKey])
+  @@index([fromWalletId, createdAt])
+  @@index([toWalletId, createdAt])
 }
+
 model OutboxEvent {
-  id String @id @default(cuid()) type String aggregateId String payload Json createdAt DateTime @default(now()) publishedAt DateTime? processedAt DateTime?
+  id          String            @id @default(cuid())
+  type        String
+  aggregateId String
+  payload     Json
+  createdAt   DateTime          @default(now())
+  publishedAt DateTime?
+  processedAt DateTime?
   deliveries WebhookDelivery[]
-  @@index([publishedAt,createdAt]) @@index([aggregateId])
+
+  @@index([publishedAt, createdAt])
+  @@index([aggregateId])
 }
+
 model WebhookEndpoint {
-  id String @id @default(cuid()) userId String url String secret String active Boolean @default(true) createdAt DateTime @default(now())
-  user User @relation(fields:[userId],references:[id],onDelete:Cascade) deliveries WebhookDelivery[]
-  @@index([userId,active])
+  id         String            @id @default(cuid())
+  userId     String
+  url        String
+  secret     String
+  active     Boolean           @default(true)
+  createdAt  DateTime          @default(now())
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deliveries WebhookDelivery[]
+
+  @@index([userId, active])
 }
+
 model WebhookDelivery {
-  id String @id @default(cuid()) eventId String endpointId String attempt Int statusCode Int success Boolean createdAt DateTime @default(now())
-  event OutboxEvent @relation(fields:[eventId],references:[id],onDelete:Cascade)
-  endpoint WebhookEndpoint @relation(fields:[endpointId],references:[id],onDelete:Cascade)
-  @@index([eventId]) @@index([endpointId,createdAt])
+  id         String          @id @default(cuid())
+  eventId    String
+  endpointId String
+  attempt    Int
+  statusCode Int
+  success    Boolean
+  createdAt  DateTime        @default(now())
+  event      OutboxEvent     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  endpoint   WebhookEndpoint @relation(fields: [endpointId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+  @@index([endpointId, createdAt])
 }
