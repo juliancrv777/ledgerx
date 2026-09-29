@@ -122,6 +122,27 @@ describe('LedgerX financial flow (e2e)',()=>{
       .get('/api/wallets').set('Authorization',`Bearer ${c.token}`).expect(200);
     expect(cWallets.body[0].balanceMinor).toBe('2000');
 
+    const webhook=await request(app.getHttpServer())
+      .post('/api/webhooks')
+      .set('Authorization',`Bearer ${a.token}`)
+      .send({url:'https://example.com/ledgerx-webhook'})
+      .expect(201);
+    expect(webhook.body.active).toBe(true);
+    expect(typeof webhook.body.secret).toBe('string');
+
+    const disabledWebhook=await request(app.getHttpServer())
+      .patch(`/api/webhooks/${webhook.body.id}`)
+      .set('Authorization',`Bearer ${a.token}`)
+      .send({active:false})
+      .expect(200);
+    expect(disabledWebhook.body.active).toBe(false);
+
+    await request(app.getHttpServer())
+      .patch(`/api/webhooks/${webhook.body.id}`)
+      .set('Authorization',`Bearer ${b.token}`)
+      .send({active:true})
+      .expect(404);
+
     const ledgerTransactions=await db.ledgerTransaction.findMany({include:{entries:true}});
     expect(ledgerTransactions.length).toBeGreaterThan(0);
     for(const tx of ledgerTransactions){
