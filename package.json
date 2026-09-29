@@ -2,12 +2,17 @@
   "name": "ledgerx",
   "private": true,
   "version": "0.1.0",
-  "workspaces": ["apps/*", "packages/*"],
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
     "build": "npm run build -ws --if-present",
     "test": "npm run test -ws --if-present",
     "test:e2e": "npm run test:e2e -w @ledgerx/api",
     "typecheck": "npm run typecheck -ws --if-present",
-    "prisma:generate": "npm run prisma:generate -w @ledgerx/api"
+    "prisma:generate": "npm run prisma:generate -w @ledgerx/api",
+    "build:render": "npm run build -w @ledgerx/api && npm run build -w @ledgerx/worker",
+    "start:render": "node scripts/start-render.mjs"
   }
 }
