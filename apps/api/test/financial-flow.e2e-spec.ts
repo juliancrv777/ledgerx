@@ -129,6 +129,29 @@ describe('LedgerX financial flow (e2e)',()=>{
       .get('/api/wallets').set('Authorization',`Bearer ${c.token}`).expect(200);
     expect(cWallets.body[0].balanceMinor).toBe('2000');
 
+    const stress=await register('Stress');
+    await request(app.getHttpServer())
+      .post(`/api/wallets/${stress.walletId}/fund`)
+      .set('Authorization',`Bearer ${stress.token}`)
+      .set('Idempotency-Key','fund-stress-1')
+      .send({amountMinor:10000})
+      .expect(201);
+
+    const concurrent=await Promise.all(Array.from({length:100},(_,index)=>
+      request(app.getHttpServer()).post('/api/transfers')
+        .set('Authorization',`Bearer ${stress.token}`)
+        .set('Idempotency-Key',`stress-spend-${index}`)
+        .send({fromWalletId:stress.walletId,toWalletId:b.walletId,amountMinor:200})
+    ));
+    const posted=concurrent.filter(response=>response.status===201);
+    const rejected=concurrent.filter(response=>response.status===409);
+    expect(posted).toHaveLength(50);
+    expect(rejected).toHaveLength(50);
+
+    const stressWallets=await request(app.getHttpServer())
+      .get('/api/wallets').set('Authorization',`Bearer ${stress.token}`).expect(200);
+    expect(stressWallets.body[0].balanceMinor).toBe('0');
+
     const webhook=await request(app.getHttpServer())
       .post('/api/webhooks')
       .set('Authorization',`Bearer ${a.token}`)
