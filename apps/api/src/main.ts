@@ -15,7 +15,7 @@ async function bootstrap(){
     .filter(Boolean);
 
   app.enableCors({
-    origin:(origin,callback)=>{
+    origin:(origin:string|undefined,callback:(error:Error|null,allow?:boolean)=>void)=>{
       // Requests without an Origin header are server-to-server/health checks.
       if(!origin)return callback(null,true);
       const normalizedOrigin=origin.replace(/\/$/,'');
