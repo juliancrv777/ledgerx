@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+      - run: npm run prisma:generate
+        env:
+          DATABASE_URL: postgresql://ledgerx:ledgerx@localhost:5432/ledgerx
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build

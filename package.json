@@ -1,0 +1,12 @@
+{
+  "name": "ledgerx",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "build": "npm run build -ws --if-present",
+    "test": "npm run test -ws --if-present",
+    "typecheck": "npm run typecheck -ws --if-present",
+    "prisma:generate": "npm run prisma:generate -w @ledgerx/api"
+  }
+}
